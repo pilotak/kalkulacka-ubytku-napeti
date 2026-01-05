@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kalkulačka úbytku napětí na kabelu</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            text-align: center;
+            font-size: 28px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        select, input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .result {
+            margin-top: 30px;
+            padding: 25px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            border-left: 4px solid #667eea;
+        }
+
+        .result-item {
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .result-label {
+            color: #666;
+            font-weight: 600;
+            margin-right: 10px;
+        }
+
+        .result-value {
+            color: #333;
+            font-weight: 700;
+            font-size: 24px;
+        }
+
+        .result-value.voltage {
+            color: #667eea;
+        }
+
+        .result-value.percentage {
+            color: #764ba2;
+        }
+
+        .result-value.temperature {
+            color: #e74c3c;
+        }
+
+        .result-value.power {
+            color: #f39c12;
+        }
+
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: 600;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .info {
+            margin-top: 20px;
+            padding: 15px;
+            background: #e7f3ff;
+            border-radius: 8px;
+            border-left: 4px solid #2196F3;
+            font-size: 14px;
+            color: #0d47a1;
+        }
+
+        .info-title {
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Kalkulačka úbytku napětí na kabelu</h1>
+        
+        <form id="calculatorForm">
+            <div class="form-group">
+                <label for="material">Materiál:</label>
+                <select id="material" required>
+                    <option value="">Vyberte materiál</option>
+                    <option value="cu">Měď (Cu)</option>
+                    <option value="al">Hliník (Al)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="crossSection">Průřez (mm²):</label>
+                <input type="number" id="crossSection" step="0.1" min="0.1" required placeholder="např. 2.5">
+            </div>
+
+            <div class="form-group">
+                <label for="length">Délka (m):</label>
+                <input type="number" id="length" step="0.1" min="0.1" required placeholder="např. 50">
+            </div>
+
+            <div class="form-group">
+                <label for="current">Proud (A):</label>
+                <input type="number" id="current" step="0.1" min="0.1" required placeholder="např. 16">
+            </div>
+
+            <div class="form-group">
+                <label for="nominalVoltage">Jmenovité napětí (V):</label>
+                <input type="number" id="nominalVoltage" step="1" min="1" value="230" required placeholder="230">
+                <small style="color: #888; font-size: 12px; display: block; margin-top: 5px;">Potřebné pro výpočet procentuálního úbytku</small>
+            </div>
+
+            <div class="form-group">
+                <label for="ambientTemp">Okolní teplota (°C):</label>
+                <input type="number" id="ambientTemp" step="1" value="20" required placeholder="20">
+                <small style="color: #888; font-size: 12px; display: block; margin-top: 5px;">Počáteční teplota vodiče a okolního prostředí</small>
+            </div>
+
+            <button type="submit">Spočítat úbytek napětí</button>
+        </form>
+
+        <div id="result" class="result" style="display: none;">
+            <div class="result-item">
+                <span class="result-label">Úbytek napětí:</span>
+                <span class="result-value voltage" id="voltageDrop">-</span>
+                <span style="color: #666;">V</span>
+            </div>
+            <div class="result-item">
+                <span class="result-label">Procenta:</span>
+                <span class="result-value percentage" id="percentage">-</span>
+                <span style="color: #666;">%</span>
+            </div>
+            <div class="result-item">
+                <span class="result-label">Výkonové ztráty:</span>
+                <span class="result-value power" id="powerLoss">-</span>
+                <span style="color: #666;">W</span>
+            </div>
+            <div class="result-item">
+                <span class="result-label">Teplotní nárůst:</span>
+                <span class="result-value temperature" id="tempRise">-</span>
+                <span style="color: #666;">°C</span>
+            </div>
+            <div class="result-item">
+                <span class="result-label">Provozní teplota:</span>
+                <span class="result-value temperature" id="operatingTemp">-</span>
+                <span style="color: #666;">°C</span>
+            </div>
+            <div id="status"></div>
+        </div>
+
+        <div class="info">
+            <div class="info-title">Kritéria:</div>
+            <div>• ≤ 3%: vhodný pro světelný okruh</div>
+            <div>• ≤ 5%: vhodný pro zásuvkový okruh</div>
+        </div>
+    </div>
+
+    <script>
+        // Měrný odpor materiálů při 20°C (Ω·mm²/m)
+        const resistivity20 = {
+            cu: 0.0175,  // Měď
+            al: 0.0283   // Hliník
+        };
+
+        // Teplotní součinitel odporu (K⁻¹)
+        const temperatureCoefficient = {
+            cu: 0.00393,  // Měď
+            al: 0.00403   // Hliník
+        };
+
+        // Referenční teplota (°C)
+        const referenceTemperature = 20;
+
+        // Funkce pro výpočet součinitele přestupu tepla (W/(m²·K))
+        // Pro tenké vodiče v klidném vzduchu: h závisí na průměru a teplotním rozdílu
+        // Pro přirozenou konvekci: h ≈ 15-40 W/(m²·K) v závislosti na průměru a ΔT
+        function getHeatTransferCoefficient(diameter, tempRise) {
+            // Základní hodnota závisí na průměru (menší průměr = vyšší h díky lepší konvekci)
+            // Pro průměr ~2mm: h ≈ 25-35 W/(m²·K)
+            // Pro průměr ~5mm: h ≈ 20-25 W/(m²·K)
+            // diameter je v mm
+            // Empirický vztah: menší průměr = vyšší h
+            const baseH = 25 + (10 / Math.max(diameter / 2, 0.5)); // Vyšší základní hodnota pro tenké vodiče
+            
+            // Zvýšení s teplotním rozdílem (přirozená konvekce je silnější při větším ΔT)
+            // Použijeme mírnější závislost
+            const deltaTFactor = 1 + Math.pow(Math.max(tempRise, 0) / 25, 0.25);
+            
+            return baseH * deltaTFactor;
+        }
+
+        document.getElementById('calculatorForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            calculate();
+        });
+
+        // Výpočet při změně hodnot
+        ['material', 'crossSection', 'length', 'current', 'nominalVoltage', 'ambientTemp'].forEach(id => {
+            document.getElementById(id).addEventListener('input', calculate);
+            document.getElementById(id).addEventListener('change', calculate);
+        });
+
+        function calculate() {
+            const material = document.getElementById('material').value;
+            const crossSection = parseFloat(document.getElementById('crossSection').value);
+            const length = parseFloat(document.getElementById('length').value);
+            const current = parseFloat(document.getElementById('current').value);
+            const nominalVoltage = parseFloat(document.getElementById('nominalVoltage').value);
+            const ambientTemp = parseFloat(document.getElementById('ambientTemp').value);
+
+            // Validace
+            if (!material || !crossSection || !length || !current || !nominalVoltage || !ambientTemp) {
+                document.getElementById('result').style.display = 'none';
+                return;
+            }
+
+            if (crossSection <= 0 || length <= 0 || current <= 0 || nominalVoltage <= 0) {
+                document.getElementById('result').style.display = 'none';
+                return;
+            }
+
+            // Měrný odpor při referenční teplotě (20°C)
+            const rho20 = resistivity20[material];
+            
+            // Teplotní součinitel odporu
+            const alpha = temperatureCoefficient[material];
+            
+            // Iterativní výpočet s ohledem na ohřev
+            // Začneme s okolní teplotou
+            let currentTemp = ambientTemp;
+            let previousTemp = ambientTemp;
+            let iterations = 0;
+            const maxIterations = 50;
+            const tolerance = 0.01; // Tolerance 0.01°C
+
+            // Výpočet průměru vodiče (předpokládáme válcový tvar)
+            const radius = Math.sqrt(crossSection / Math.PI); // mm
+            const diameter = 2 * radius; // mm
+            const surfaceAreaPerMeter = Math.PI * (diameter / 1000); // m²/m (převod mm na m)
+            const totalSurfaceArea = surfaceAreaPerMeter * length * 2; // m² (oba vodiče)
+            
+            // Výpočet teplotního nárůstu iterativně
+            do {
+                previousTemp = currentTemp;
+                
+                // Měrný odpor při aktuální teplotě
+                const rho = rho20 * (1 + alpha * (currentTemp - referenceTemperature));
+                
+                // Odpor vodiče: R = ρ × L / A
+                // Pro jednofázový obvod: 2 vodiče (tam i zpět)
+                const resistancePerConductor = (rho * length) / crossSection;
+                const totalResistance = 2 * resistancePerConductor; // Oba vodiče
+                
+                // Výkonové ztráty: P = I² × R (celkové ztráty v kabelu)
+                const powerLoss = current * current * totalResistance;
+                
+                // Aktuální teplotní nárůst pro výpočet h
+                const currentTempRise = currentTemp - ambientTemp;
+                
+                // Součinitel přestupu tepla (závisí na průměru a teplotním rozdílu)
+                const h = getHeatTransferCoefficient(diameter, currentTempRise);
+                
+                // Teplotní nárůst: ΔT = P / (h × A)
+                // kde h je součinitel přestupu tepla, A je povrch
+                const tempRise = powerLoss / (h * totalSurfaceArea);
+                
+                // Nová provozní teplota
+                currentTemp = ambientTemp + tempRise;
+                
+                iterations++;
+            } while (Math.abs(currentTemp - previousTemp) > tolerance && iterations < maxIterations);
+
+            // Finální výpočet s ustálenou teplotou
+            const rho = rho20 * (1 + alpha * (currentTemp - referenceTemperature));
+            const resistancePerConductor = (rho * length) / crossSection;
+            const totalResistance = 2 * resistancePerConductor;
+            const powerLoss = current * current * totalResistance;
+            const voltageDrop = 2 * current * resistancePerConductor;
+            const percentage = (voltageDrop / nominalVoltage) * 100;
+            const tempRise = currentTemp - ambientTemp;
+
+            // Zobrazení výsledků
+            document.getElementById('voltageDrop').textContent = voltageDrop.toFixed(2);
+            document.getElementById('percentage').textContent = percentage.toFixed(1);
+            document.getElementById('powerLoss').textContent = powerLoss.toFixed(2);
+            document.getElementById('tempRise').textContent = tempRise.toFixed(1);
+            document.getElementById('operatingTemp').textContent = currentTemp.toFixed(1);
+
+            // Status
+            const statusDiv = document.getElementById('status');
+            let statusHTML = '';
+
+            // Kontrola pro světelný okruh (≤ 3%)
+            if (percentage <= 3) {
+                statusHTML += '<div class="status success">✓ Vhodný pro světelný okruh (≤ 3%)</div>';
+            } else {
+                statusHTML += '<div class="status error">✗ Nevhodný pro světelný okruh (> 3%)</div>';
+            }
+
+            // Kontrola pro zásuvkový okruh (≤ 5%)
+            if (percentage <= 5) {
+                statusHTML += '<div class="status success">✓ Vhodný pro zásuvkový okruh (≤ 5%)</div>';
+            } else {
+                statusHTML += '<div class="status error">✗ Nevhodný pro zásuvkový okruh (> 5%)</div>';
+            }
+
+            // Varování při vysoké teplotě
+            if (currentTemp > 70) {
+                statusHTML += '<div class="status error">⚠ Vysoká provozní teplota! Může poškodit izolaci (> 70°C)</div>';
+            } else if (currentTemp > 50) {
+                statusHTML += '<div class="status warning">⚠ Zvýšená provozní teplota (> 50°C)</div>';
+            }
+
+            statusDiv.innerHTML = statusHTML;
+            document.getElementById('result').style.display = 'block';
+        }
+    </script>
+</body>
+</html>
